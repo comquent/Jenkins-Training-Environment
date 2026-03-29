@@ -1,0 +1,5 @@
+config.env
+.jenkins-credentials
+*.bak
+*.tmp
+.DS_Store
