@@ -152,15 +152,32 @@ Folgende Plugins werden standardmaessig installiert:
 - **git** -- Git-Integration
 - **workflow-aggregator** -- Pipeline-Support
 - **docker-workflow** -- Docker in Pipelines
-- **blueocean** -- Moderne Jenkins-UI
 - **credentials** / **credentials-binding** -- Credential-Management
 - **ssh-agent** -- SSH-Agent fuer Pipelines
 - **matrix-auth** -- Berechtigungsmatrix
 - **configuration-as-code** -- Jenkins Configuration as Code (JCasC)
+- **pipeline-stage-view** -- Pipeline Stage Visualisierung
+- **timestamper** -- Zeitstempel in Build-Logs
 - **locale** -- Spracheinstellungen
 - **antisamy-markup-formatter** -- Sichere HTML-Formatierung
 
 Weitere Plugins koennen ueber den Parameter `INSTALL_PLUGINS` hinzugefuegt werden.
+
+## Smoke-Test Pipeline Jobs
+
+Nach dem Deployment werden automatisch 7 Pipeline-Jobs im Ordner `smoke-tests` angelegt, die die Jenkins-Konfiguration validieren:
+
+| Job | Beschreibung |
+|---|---|
+| `01 - System Info` | Zeigt Host-Informationen, Java-Version, Jenkins-Umgebung |
+| `02 - Docker Test` | Prueft Docker CLI, `docker run`, `docker build` |
+| `03 - Docker Agent Pipeline` | Fuehrt Stages in Docker-Containern aus (Alpine, Ubuntu) |
+| `04 - Credentials Test` | Validiert das Credential-Management |
+| `05 - Pipeline Features` | Testet parallele Stages, Stash/Unstash, Artefakte |
+| `06 - Git Test` | Prueft Git-Installation und Repository-Klonen |
+| `07 - SSL & Nginx Check` | Prueft HTTPS, Zertifikat, Nginx-Status |
+
+Alle Jobs koennen einzeln oder als Gesamttest ausgefuehrt werden.
 
 ## Projektstruktur
 

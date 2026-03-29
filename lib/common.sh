@@ -75,7 +75,10 @@ process_template() {
     for var in "${vars[@]}"; do
         local value="${!var:-}"
         if [[ -n "$value" ]]; then
-            sed -i.bak "s|{{${var}}}|${value}|g" "$output_file"
+            # Sonderzeichen in value escapen ($ & | \ /)
+            local escaped_value
+            escaped_value=$(printf '%s' "$value" | sed 's/[&/\$|\\]/\\&/g')
+            sed -i.bak "s|{{${var}}}|${escaped_value}|g" "$output_file"
         fi
     done
     rm -f "${output_file}.bak"
@@ -187,7 +190,6 @@ DEFAULT_PLUGINS=(
     "git"
     "workflow-aggregator"
     "docker-workflow"
-    "blueocean"
     "credentials"
     "credentials-binding"
     "ssh-agent"
@@ -195,4 +197,7 @@ DEFAULT_PLUGINS=(
     "configuration-as-code"
     "locale"
     "antisamy-markup-formatter"
+    "pipeline-stage-view"
+    "timestamper"
+    "job-dsl"
 )

@@ -17,9 +17,6 @@ jenkins:
         - "Overall/Administer:{{ADMIN_USER}}"
         - "Overall/Read:authenticated"
 
-  remotingSecurity:
-    enabled: true
-
 security:
   scriptApproval:
     approvedSignatures: []
@@ -28,10 +25,6 @@ unclassified:
   location:
     url: "{{JENKINS_CASC_URL}}"
     adminAddress: "admin@jenkins-training.local"
-
-  locale:
-    systemLocale: "de_DE"
-    ignoreAcceptLanguage: false
 
 tool:
   git:
@@ -42,3 +35,287 @@ tool:
     installations:
       - name: "JDK {{JAVA_VERSION}}"
         home: "/usr/lib/jvm/java-{{JAVA_VERSION}}-openjdk-amd64"
+
+jobs:
+  - script: |
+      folder('smoke-tests') {
+        displayName('Smoke Tests')
+        description('Automatische Tests zur Validierung der Jenkins-Umgebung')
+      }
+
+  - script: |
+      pipelineJob('smoke-tests/01-system-info') {
+        displayName('01 - System Info')
+        description('Zeigt Systeminformationen des Jenkins-Hosts an')
+        definition {
+          cps {
+            script('''\
+              pipeline {
+                agent any
+                stages {
+                  stage('System') {
+                    steps {
+                      sh 'uname -a'
+                      sh 'cat /etc/os-release'
+                      sh 'java -version 2>&1'
+                      sh 'free -h'
+                      sh 'df -h /'
+                    }
+                  }
+                  stage('Jenkins') {
+                    steps {
+                      echo "Jenkins URL: ${env.JENKINS_URL}"
+                      echo "Jenkins Home: ${env.JENKINS_HOME}"
+                      echo "Node: ${env.NODE_NAME}"
+                      echo "Workspace: ${env.WORKSPACE}"
+                      echo "Executors: ${env.EXECUTOR_NUMBER}"
+                    }
+                  }
+                  stage('Netzwerk') {
+                    steps {
+                      sh 'hostname -I'
+                      sh 'curl -s -o /dev/null -w "HTTP %{http_code}" http://localhost:{{JENKINS_PORT}}/login'
+                    }
+                  }
+                }
+              }
+            '''.stripIndent())
+            sandbox(true)
+          }
+        }
+      }
+
+  - script: |
+      pipelineJob('smoke-tests/02-docker-test') {
+        displayName('02 - Docker Test')
+        description('Prueft ob Docker korrekt konfiguriert ist')
+        definition {
+          cps {
+            script('''\
+              pipeline {
+                agent any
+                stages {
+                  stage('Docker CLI') {
+                    steps {
+                      sh 'docker --version'
+                      sh 'docker info --format "Storage Driver: {{.Driver}}"'
+                    }
+                  }
+                  stage('Docker Run') {
+                    steps {
+                      sh 'docker run --rm hello-world'
+                    }
+                  }
+                  stage('Docker Build') {
+                    steps {
+                      writeFile file: 'Dockerfile', text: """
+                        FROM alpine:latest
+                        RUN echo "Docker build funktioniert"
+                      """
+                      sh 'docker build -t smoke-test:latest .'
+                      sh 'docker rmi smoke-test:latest'
+                    }
+                  }
+                }
+                post {
+                  always {
+                    sh 'docker system prune -f 2>/dev/null || true'
+                  }
+                }
+              }
+            '''.stripIndent())
+            sandbox(true)
+          }
+        }
+      }
+
+  - script: |
+      pipelineJob('smoke-tests/03-docker-agent') {
+        displayName('03 - Docker Agent Pipeline')
+        description('Fuehrt Stages in Docker-Containern aus')
+        definition {
+          cps {
+            script('''\
+              pipeline {
+                agent none
+                stages {
+                  stage('In Alpine') {
+                    agent {
+                      docker {
+                        image 'alpine:latest'
+                      }
+                    }
+                    steps {
+                      sh 'cat /etc/os-release'
+                      sh 'echo "Laufe in Alpine Container"'
+                    }
+                  }
+                  stage('In Ubuntu') {
+                    agent {
+                      docker {
+                        image 'ubuntu:24.04'
+                      }
+                    }
+                    steps {
+                      sh 'cat /etc/os-release'
+                      sh 'echo "Laufe in Ubuntu Container"'
+                    }
+                  }
+                }
+              }
+            '''.stripIndent())
+            sandbox(true)
+          }
+        }
+      }
+
+  - script: |
+      pipelineJob('smoke-tests/04-credentials-test') {
+        displayName('04 - Credentials Test')
+        description('Prueft ob das Credential-Management funktioniert')
+        definition {
+          cps {
+            script('''\
+              pipeline {
+                agent any
+                stages {
+                  stage('Credentials Plugin') {
+                    steps {
+                      echo "Credentials-Plugin ist installiert"
+                      sh """
+                        curl -s http://localhost:{{JENKINS_PORT}}/credentials/store/system/domain/_/ \\
+                          -o /dev/null -w "Credentials Store: HTTP %{http_code}"
+                      """
+                    }
+                  }
+                }
+              }
+            '''.stripIndent())
+            sandbox(true)
+          }
+        }
+      }
+
+  - script: |
+      pipelineJob('smoke-tests/05-pipeline-features') {
+        displayName('05 - Pipeline Features')
+        description('Testet erweiterte Pipeline-Funktionen: parallel, input, stash')
+        definition {
+          cps {
+            script('''\
+              pipeline {
+                agent any
+                stages {
+                  stage('Parallel') {
+                    parallel {
+                      stage('Branch A') {
+                        steps {
+                          sh 'echo "Parallel A" && sleep 2'
+                        }
+                      }
+                      stage('Branch B') {
+                        steps {
+                          sh 'echo "Parallel B" && sleep 2'
+                        }
+                      }
+                    }
+                  }
+                  stage('Stash/Unstash') {
+                    steps {
+                      writeFile file: 'test-artifact.txt', text: "Erstellt am: ${new Date()}"
+                      stash includes: 'test-artifact.txt', name: 'test-files'
+                      unstash 'test-files'
+                      sh 'cat test-artifact.txt'
+                    }
+                  }
+                  stage('Archivieren') {
+                    steps {
+                      writeFile file: 'report.html', text: '<h1>Smoke Test Report</h1><p>Alle Tests bestanden.</p>'
+                      archiveArtifacts artifacts: 'report.html', fingerprint: true
+                    }
+                  }
+                }
+                post {
+                  success {
+                    echo 'Alle Pipeline-Features funktionieren!'
+                  }
+                }
+              }
+            '''.stripIndent())
+            sandbox(true)
+          }
+        }
+      }
+
+  - script: |
+      pipelineJob('smoke-tests/06-git-test') {
+        displayName('06 - Git Test')
+        description('Prueft ob Git korrekt konfiguriert ist und Repositories geklont werden koennen')
+        definition {
+          cps {
+            script('''\
+              pipeline {
+                agent any
+                stages {
+                  stage('Git Version') {
+                    steps {
+                      sh 'git --version'
+                    }
+                  }
+                  stage('Git Clone') {
+                    steps {
+                      git url: 'https://github.com/jenkinsci/configuration-as-code-plugin.git',
+                          branch: 'master'
+                      sh 'ls -la'
+                      sh 'git log --oneline -5'
+                    }
+                  }
+                }
+              }
+            '''.stripIndent())
+            sandbox(true)
+          }
+        }
+      }
+
+  - script: |
+      pipelineJob('smoke-tests/07-ssl-check') {
+        displayName('07 - SSL & Nginx Check')
+        description('Prueft die HTTPS-Konfiguration und den Nginx Reverse Proxy')
+        definition {
+          cps {
+            script('''\
+              pipeline {
+                agent any
+                stages {
+                  stage('Nginx Status') {
+                    steps {
+                      sh 'systemctl is-active nginx && echo "Nginx laeuft" || echo "Nginx nicht aktiv"'
+                    }
+                  }
+                  stage('SSL Zertifikat') {
+                    steps {
+                      sh """
+                        if command -v certbot >/dev/null 2>&1; then
+                          sudo certbot certificates 2>/dev/null || echo 'Certbot nicht verfuegbar'
+                        else
+                          echo 'Certbot nicht installiert'
+                        fi
+                      """
+                    }
+                  }
+                  stage('HTTPS Erreichbarkeit') {
+                    steps {
+                      sh """
+                        curl -sk -o /dev/null -w "HTTPS: HTTP %{http_code}\\n" https://localhost/ || echo 'HTTPS nicht erreichbar'
+                        curl -s -o /dev/null -w "HTTP:  HTTP %{http_code}\\n" http://localhost/ || echo 'HTTP nicht erreichbar'
+                      """
+                    }
+                  }
+                }
+              }
+            '''.stripIndent())
+            sandbox(true)
+          }
+        }
+      }

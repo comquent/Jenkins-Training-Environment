@@ -93,11 +93,12 @@ Folgende Plugins werden standardmaessig installiert:
 - `git` - Git-Integration
 - `pipeline` (workflow-aggregator) - Pipeline-Support
 - `docker-workflow` - Docker in Pipelines
-- `blueocean` - Moderne UI
-- `credentials` - Credential-Management
+- `credentials` / `credentials-binding` - Credential-Management
 - `ssh-agent` - SSH-Agent fuer Pipelines
 - `matrix-auth` - Autorisierung
 - `configuration-as-code` - JCasC Support
+- `pipeline-stage-view` - Pipeline Stage Visualisierung
+- `timestamper` - Zeitstempel in Build-Logs
 
 ## Konventionen
 

@@ -5,13 +5,18 @@
 
 log_info "Fuege Jenkins APT-Repository hinzu..."
 remote_exec "
-    # GPG-Key hinzufuegen
+    # Alte Konfiguration bereinigen
+    sudo rm -f /usr/share/keyrings/jenkins-keyring.asc /usr/share/keyrings/jenkins-keyring.gpg
+    sudo rm -f /etc/apt/sources.list.d/jenkins.list
+
+    # GPG-Key vom Keyserver holen (der Download-Key von pkg.jenkins.io ist abgelaufen)
     sudo mkdir -p /usr/share/keyrings
-    curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key \
-        | sudo tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+    gpg --batch --keyserver keyserver.ubuntu.com --recv-keys 5E386EADB55F01504CAE8BCF7198F4B714ABFC68 2>/dev/null
+    gpg --batch --export 5E386EADB55F01504CAE8BCF7198F4B714ABFC68 \
+        | sudo tee /usr/share/keyrings/jenkins-keyring.gpg > /dev/null
 
     # Repository hinzufuegen
-    echo 'deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/' \
+    echo 'deb [signed-by=/usr/share/keyrings/jenkins-keyring.gpg] https://pkg.jenkins.io/debian-stable binary/' \
         | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
 
     sudo apt-get update -qq

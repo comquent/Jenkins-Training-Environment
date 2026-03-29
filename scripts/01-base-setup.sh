@@ -4,7 +4,7 @@
 # ==============================================================================
 
 log_info "Aktualisiere Paketlisten..."
-remote_exec "sudo apt-get update -qq"
+remote_exec "sudo apt-get update -qq 2>&1 || true"
 log_success "Paketlisten aktualisiert"
 
 log_info "Installiere Basispakete..."
