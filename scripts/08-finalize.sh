@@ -53,14 +53,15 @@ echo -e "${GREEN}╔════════════════════
 echo -e "${GREEN}║              Jenkins Training Environment                    ║${NC}"
 echo -e "${GREEN}╠══════════════════════════════════════════════════════════════╣${NC}"
 
-if [[ "$NGINX_REVERSE_PROXY" == "true" ]]; then
-    if [[ "$ENABLE_SSL" == "true" ]]; then
-        echo -e "${GREEN}║${NC}  URL:       https://${TARGET_HOST}"
-    else
-        echo -e "${GREEN}║${NC}  URL:       http://${TARGET_HOST}"
-    fi
+if [[ -n "${DOMAIN_NAME}" ]]; then
+    JENKINS_URL="https://${DOMAIN_NAME}"
+    echo -e "${GREEN}║${NC}  URL:       ${JENKINS_URL}"
+elif [[ "$NGINX_REVERSE_PROXY" == "true" ]]; then
+    JENKINS_URL="http://${TARGET_HOST}"
+    echo -e "${GREEN}║${NC}  URL:       ${JENKINS_URL}"
 else
-    echo -e "${GREEN}║${NC}  URL:       http://${TARGET_HOST}:${JENKINS_PORT}"
+    JENKINS_URL="http://${TARGET_HOST}:${JENKINS_PORT}"
+    echo -e "${GREEN}║${NC}  URL:       ${JENKINS_URL}"
 fi
 
 echo -e "${GREEN}║${NC}  Version:   ${JENKINS_VERSION_HEADER:-unbekannt}"
@@ -72,7 +73,11 @@ if [[ "$INSTALL_DOCKER" == "true" ]]; then
     echo -e "${GREEN}║${NC}  Docker:    installiert"
 fi
 if [[ "$NGINX_REVERSE_PROXY" == "true" ]]; then
-    echo -e "${GREEN}║${NC}  Nginx:     aktiv (Reverse Proxy)"
+    if [[ -n "${DOMAIN_NAME}" ]]; then
+        echo -e "${GREEN}║${NC}  Nginx:     aktiv (Reverse Proxy + Let's Encrypt SSL)"
+    else
+        echo -e "${GREEN}║${NC}  Nginx:     aktiv (Reverse Proxy)"
+    fi
 fi
 if [[ "$AGENT_COUNT" -gt 0 ]]; then
     echo -e "${GREEN}║${NC}  Agenten:   ${AGENT_COUNT} vorbereitet"
@@ -87,7 +92,7 @@ echo ""
 CREDS_FILE="${SCRIPT_DIR}/.jenkins-credentials"
 cat > "$CREDS_FILE" <<EOF
 # Jenkins Credentials - $(date '+%Y-%m-%d %H:%M:%S')
-JENKINS_URL=http://${TARGET_HOST}:${JENKINS_PORT}
+JENKINS_URL=${JENKINS_URL}
 ADMIN_USER=${ADMIN_USER}
 ADMIN_PASSWORD=${ADMIN_PASSWORD}
 EOF

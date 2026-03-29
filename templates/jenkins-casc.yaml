@@ -26,7 +26,7 @@ security:
 
 unclassified:
   location:
-    url: "http://{{TARGET_HOST}}:{{JENKINS_PORT}}/"
+    url: "{{JENKINS_CASC_URL}}"
     adminAddress: "admin@jenkins-training.local"
 
   locale:

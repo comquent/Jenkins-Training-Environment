@@ -68,7 +68,8 @@ process_template() {
         TARGET_HOST SSH_USER SSH_PORT
         JENKINS_PORT JENKINS_VERSION JAVA_VERSION
         ADMIN_USER ADMIN_PASSWORD
-        ENABLE_SSL NGINX_REVERSE_PROXY
+        DOMAIN_NAME LETSENCRYPT_EMAIL JENKINS_CASC_URL
+        NGINX_REVERSE_PROXY
     )
 
     for var in "${vars[@]}"; do
@@ -157,15 +158,28 @@ load_config() {
     ADMIN_USER="${ADMIN_USER:-admin}"
     ADMIN_PASSWORD="${ADMIN_PASSWORD:-$(generate_password)}"
     AGENT_COUNT="${AGENT_COUNT:-0}"
-    ENABLE_SSL="${ENABLE_SSL:-false}"
-    NGINX_REVERSE_PROXY="${NGINX_REVERSE_PROXY:-false}"
+    DOMAIN_NAME="${DOMAIN_NAME:-}"
+    LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-}"
+
+    # Wenn DOMAIN_NAME gesetzt ist, Nginx automatisch aktivieren
+    if [[ -n "$DOMAIN_NAME" ]]; then
+        NGINX_REVERSE_PROXY="true"
+        JENKINS_CASC_URL="https://${DOMAIN_NAME}/"
+    else
+        NGINX_REVERSE_PROXY="${NGINX_REVERSE_PROXY:-false}"
+        if [[ "$NGINX_REVERSE_PROXY" == "true" ]]; then
+            JENKINS_CASC_URL="http://${TARGET_HOST}/"
+        else
+            JENKINS_CASC_URL="http://${TARGET_HOST}:${JENKINS_PORT}/"
+        fi
+    fi
 
     # Exportieren
     export TARGET_HOST SSH_KEY_PATH SSH_USER SSH_PORT
     export JENKINS_PORT JENKINS_VERSION JAVA_VERSION
     export INSTALL_DOCKER INSTALL_PLUGINS
     export ADMIN_USER ADMIN_PASSWORD
-    export AGENT_COUNT ENABLE_SSL NGINX_REVERSE_PROXY
+    export AGENT_COUNT DOMAIN_NAME LETSENCRYPT_EMAIL JENKINS_CASC_URL NGINX_REVERSE_PROXY
 }
 
 # Default-Plugins

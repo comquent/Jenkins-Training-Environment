@@ -64,6 +64,10 @@ log_info "Jenkins-Version: ${JENKINS_VERSION}"
 log_info "Java-Version:    ${JAVA_VERSION}"
 log_info "Docker:          ${INSTALL_DOCKER}"
 log_info "Nginx Proxy:     ${NGINX_REVERSE_PROXY}"
+if [[ -n "${DOMAIN_NAME}" ]]; then
+    log_info "Domain:          ${DOMAIN_NAME}"
+    log_info "SSL:             Let's Encrypt"
+fi
 log_info "Agenten:         ${AGENT_COUNT}"
 echo ""
 

@@ -10,7 +10,7 @@ Dieses Projekt automatisiert die Installation und Konfiguration einer Jenkins-Um
 - **OS:** Ubuntu 22.04 / 24.04 LTS
 - **Zugang:** SSH mit Key-Authentifizierung
 - **Mindestanforderungen:** 2 CPU, 4 GB RAM, 20 GB Disk
-- **Netzwerk:** Port 8080 (Jenkins UI) und Port 22 (SSH) muessen erreichbar sein
+- **Netzwerk:** Port 8080 (Jenkins UI), Port 22 (SSH) und Port 80/443 (bei SSL) muessen erreichbar sein
 
 ### Voraussetzungen lokal
 - `ssh` Client installiert
@@ -40,8 +40,9 @@ Alle Parameter werden in `config.env` definiert. Folgende Parameter stehen zur V
 | `ADMIN_USER` | Jenkins Admin-Benutzername | Nein | `admin` |
 | `ADMIN_PASSWORD` | Jenkins Admin-Passwort | Nein | (wird generiert) |
 | `AGENT_COUNT` | Anzahl zusaetzlicher Jenkins-Agenten (0-5) | Nein | `0` |
-| `ENABLE_SSL` | SSL via selbstsigniertem Zertifikat aktivieren | Nein | `false` |
-| `NGINX_REVERSE_PROXY` | Nginx als Reverse Proxy installieren | Nein | `false` |
+| `DOMAIN_NAME` | Domain fuer Jenkins (aktiviert Nginx + Let's Encrypt SSL) | Nein | *(leer)* |
+| `LETSENCRYPT_EMAIL` | E-Mail fuer Let's Encrypt Benachrichtigungen | Nein | *(leer)* |
+| `NGINX_REVERSE_PROXY` | Nginx als Reverse Proxy (automatisch bei DOMAIN_NAME) | Nein | `false` |
 
 ## Projektstruktur
 
@@ -63,7 +64,8 @@ Alle Parameter werden in `config.env` definiert. Folgende Parameter stehen zur V
 │   └── 08-finalize.sh     # Abschluss, Passwort-Ausgabe, Health-Check
 ├── templates/
 │   ├── jenkins-casc.yaml  # Jenkins Configuration as Code Template
-│   └── nginx-jenkins.conf # Nginx-Konfigurationstemplate
+│   ├── nginx-jenkins.conf      # Nginx-Konfiguration mit SSL (Let's Encrypt)
+│   └── nginx-jenkins-nossl.conf # Nginx-Konfiguration ohne SSL
 └── lib/
     └── common.sh          # Gemeinsame Funktionen (SSH, Logging, etc.)
 ```

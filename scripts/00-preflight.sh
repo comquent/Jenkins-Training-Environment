@@ -72,4 +72,20 @@ if ! remote_exec "curl -s --connect-timeout 5 https://pkg.jenkins.io >/dev/null 
 fi
 log_success "Internetzugang vorhanden"
 
+if [[ -n "${DOMAIN_NAME}" ]]; then
+    log_info "Pruefe DNS-Aufloesung fuer ${DOMAIN_NAME}..."
+    RESOLVED_IP=$(remote_exec "dig +short ${DOMAIN_NAME} 2>/dev/null | head -1")
+    if [[ -z "$RESOLVED_IP" ]]; then
+        log_error "Domain ${DOMAIN_NAME} kann nicht aufgeloest werden"
+        log_info "Stelle sicher, dass ein DNS-A-Record fuer ${DOMAIN_NAME} auf ${TARGET_HOST} zeigt"
+        exit 1
+    fi
+    log_success "Domain ${DOMAIN_NAME} loest auf zu ${RESOLVED_IP}"
+
+    log_info "Pruefe ob Port 80 von aussen erreichbar ist (noetig fuer Let's Encrypt)..."
+    if ! remote_exec "sudo ufw status 2>/dev/null | grep -q '80/tcp.*ALLOW'" 2>/dev/null; then
+        log_warn "Port 80 ist moeglicherweise nicht in der Firewall freigegeben -- wird in 01-base-setup.sh konfiguriert"
+    fi
+fi
+
 log_success "Alle Preflight-Checks bestanden"

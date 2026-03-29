@@ -25,6 +25,8 @@ Automatisierte Installation und Konfiguration einer Jenkins-Umgebung auf einer e
 - Internetzugang
 - Mindestens 2 CPUs, 4 GB RAM, 20 GB Disk
 - Ports 22 (SSH) und 8080 (Jenkins) erreichbar
+- Zusaetzlich Port 80 und 443 bei Verwendung von Let's Encrypt SSL
+- DNS-A-Record auf die VM-IP, wenn `DOMAIN_NAME` genutzt wird
 
 ## Schnellstart
 
@@ -73,8 +75,9 @@ Alle Parameter werden in `config.env` gesetzt. Eine kommentierte Vorlage liegt i
 | `ADMIN_USER` | `admin` | Jenkins-Admin-Benutzername |
 | `ADMIN_PASSWORD` | *(generiert)* | Admin-Passwort (wird automatisch erzeugt, wenn leer) |
 | `AGENT_COUNT` | `0` | Anzahl lokaler Jenkins-Agenten (0--5) |
-| `NGINX_REVERSE_PROXY` | `false` | Nginx als Reverse Proxy vor Jenkins |
-| `ENABLE_SSL` | `false` | Selbstsigniertes SSL-Zertifikat (nur mit Nginx) |
+| `DOMAIN_NAME` | *(leer)* | Domain fuer Jenkins -- aktiviert Nginx + Let's Encrypt SSL |
+| `LETSENCRYPT_EMAIL` | *(leer)* | E-Mail fuer Let's Encrypt Zertifikats-Benachrichtigungen |
+| `NGINX_REVERSE_PROXY` | `false` | Nginx als Reverse Proxy (wird automatisch aktiviert bei `DOMAIN_NAME`) |
 
 ### Beispielkonfigurationen
 
@@ -86,20 +89,21 @@ SSH_KEY_PATH="~/.ssh/training_key"
 SSH_USER="ubuntu"
 ```
 
-**Produktionsaehnliches Setup** -- mit Nginx, SSL und zusaetzlichen Plugins:
+**Mit SSL (Let's Encrypt)** -- Nginx als Reverse Proxy mit automatischem Zertifikat:
 
 ```bash
 TARGET_HOST="10.0.1.50"
 SSH_KEY_PATH="~/.ssh/training_key"
 SSH_USER="ubuntu"
-JENKINS_PORT="8080"
+DOMAIN_NAME="jenkins.meinefirma.de"
+LETSENCRYPT_EMAIL="admin@meinefirma.de"
 JAVA_VERSION="21"
-NGINX_REVERSE_PROXY="true"
-ENABLE_SSL="true"
 INSTALL_PLUGINS="ansible,terraform,kubernetes"
 AGENT_COUNT="2"
 ADMIN_PASSWORD="MeinSicheresPasswort123"
 ```
+
+Sobald `DOMAIN_NAME` gesetzt ist, wird automatisch Nginx als Reverse Proxy installiert, ein Let's Encrypt Zertifikat angefordert und HTTP auf HTTPS umgeleitet. Die automatische Zertifikatserneuerung wird ebenfalls eingerichtet.
 
 ## Deployment-Optionen
 
@@ -179,8 +183,9 @@ Weitere Plugins koennen ueber den Parameter `INSTALL_PLUGINS` hinzugefuegt werde
 │   ├── 07-agents.sh       # Jenkins-Agenten (optional)
 │   └── 08-finalize.sh     # Abschluss und Health-Check
 └── templates/
-    ├── jenkins-casc.yaml  # JCasC-Template
-    └── nginx-jenkins.conf # Nginx-Konfiguration
+    ├── jenkins-casc.yaml       # JCasC-Template
+    ├── nginx-jenkins.conf      # Nginx mit SSL (Let's Encrypt)
+    └── nginx-jenkins-nossl.conf # Nginx ohne SSL
 ```
 
 ## Sicherheitshinweise
@@ -188,7 +193,8 @@ Weitere Plugins koennen ueber den Parameter `INSTALL_PLUGINS` hinzugefuegt werde
 - `config.env` und `.jenkins-credentials` sind in `.gitignore` eingetragen und werden nicht versioniert.
 - Das Admin-Passwort wird automatisch generiert, wenn keines gesetzt ist.
 - Der Setup-Wizard wird deaktiviert -- die Konfiguration erfolgt vollstaendig ueber JCasC.
-- Bei Verwendung von `ENABLE_SSL=true` wird ein selbstsigniertes Zertifikat erstellt. Fuer Produktionsumgebungen sollte ein echtes Zertifikat (z.B. via Let's Encrypt) verwendet werden.
+- Bei gesetztem `DOMAIN_NAME` wird automatisch ein Let's Encrypt Zertifikat angefordert. Die automatische Erneuerung (alle 90 Tage) wird ueber einen Certbot-Timer und einen Nginx-Reload-Hook sichergestellt.
+- Ohne `DOMAIN_NAME` laeuft Jenkins unverschluesselt -- nur fuer geschuetzte Netzwerke empfohlen.
 
 ## Fehlerbehebung
 
