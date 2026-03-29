@@ -1,4 +1,12 @@
+<p align="center">
+  <a href="https://comquent.academy/jenkins-expert-training-schulung/">
+    <img src="https://comquent.academy/wp-content/uploads/comquent-academy-logo.png" alt="Comquent Academy" width="400">
+  </a>
+</p>
+
 # Jenkins Training Environment
+
+Ein Projekt der **[Comquent Academy](https://comquent.academy/jenkins-expert-training-schulung/)** -- begleitend zum [Jenkins Expert Training](https://comquent.academy/jenkins-expert-training-schulung/).
 
 Automatisierte Installation und Konfiguration einer Jenkins-Umgebung auf einer entfernten Ubuntu-VM. Das Deployment erfolgt komplett per SSH -- es werden keine Agenten oder zusaetzliche Tools auf dem Zielsystem vorausgesetzt.
 
@@ -206,6 +214,12 @@ ssh -i ~/.ssh/training_key ubuntu@10.0.1.50 "sudo journalctl -u jenkins -n 50"
 ./deploy.sh --step 04-plugins
 ```
 
+## Weiterbildung
+
+Dieses Projekt ist Teil des Schulungsangebots der Comquent Academy. Weitere Informationen zum Jenkins Expert Training:
+
+**[Jenkins Expert Training -- Comquent Academy](https://comquent.academy/jenkins-expert-training-schulung/)**
+
 ## Lizenz
 
-Intern -- fuer Trainingszwecke.
+Intern -- Comquent Academy, fuer Trainingszwecke.
